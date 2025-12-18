@@ -1,0 +1,101 @@
+---
+title: "Final Project Communication"
+format: revealjs
+editor: visual
+author: "Kunal Pilla"
+---
+
+# Does Action-Related Meaning Matter More Than Sensory Meaning for Iconic Gesture Use?
+
+## Abstract
+
+Iconic gestures visually depict aspects of meaning and are often assumed to reflect underlying sensorimotor representations. Previous work suggests that both action-related meaning and sensory vividness may influence when iconic gestures are used, but their usage and contributions are still unclear. This exploratory analysis examines whether action-related meaning shows a stronger relationship with iconic gesture use than general sensory strength. Results suggest that both dimensions exhibit similar, non-linear patterns, with iconic gestures occurring most frequently at moderate levels of semantic strength.
+
+## Introduction
+
+Iconic gestures play an important role in multimodal communication by visually representing aspects of spoken meaning. Theoretical accounts of gesture production often note the role of sensorimotor simulation, which is usually action-related representations. From this, we can hypothesize that words that strongly evoke actions may be especially likely to co-occur with iconic gestures.
+
+Many words evoke sensory experiences across modalities. Work by Wilding et al. (2025) suggests that word-level iconicity may be a factor in predicting the use of iconic gestures. This analysis asks whether action-related meaning matters more than sensory meaning in iconic gesture production.
+
+## Methods
+
+#### Data Source
+
+The data analyzed here come from a secondary analysis of materials reported in Wilding et al. (2025). The dataset includes word tokens extracted from a gesture-annotated speech corpus in which speakers were visible and gestures were coded for type. Semantic measures were drawn from the Lancaster Sensorimotor Norms, which provide ratings of action and sensory associations for English words. There were 45 words total that were tested.
+
+## Measures
+
+Analyses focused on three word-level variables:
+
+-   **Iconic gesture proportion**, defined as the proportion of a word’s occurrences that were accompanied by an iconic gesture.
+
+-   **Maximum action strength**, capturing the strongest action-related association for each word.
+
+-   **Maximum sensory strength**, capturing the strongest perceptual association across sensory modalities.
+
+## Analytic Approach
+
+Because the goal of this project was exploratory, analyses focused on descriptive statistics and visualizations rather than formal hypothesis testing. Relationships between semantic strength and iconic gesture proportion were examined using both continuous and binned representations to identify potential non-linear trends.
+
+## Results
+
+```{r,include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+```
+
+```{r, echo=FALSE}
+#Load the data
+by_word<- read_csv("by_word_proportions_with_modality.csv")
+
+by_word |>
+  mutate( 
+    action_bin = cut(
+    max_action,
+    breaks = quantile(max_action, probs = c(0, .33, .66, 1), na.rm = TRUE),
+    labels = c("Low", "Medium", "High"),
+    include.lowest = TRUE
+        )
+      ) |>
+  group_by(action_bin) |>
+  summarize(
+    mean_iconic = mean(iconic_gesture_proportion, na.rm = TRUE),
+    se_iconic = sd(iconic_gesture_proportion, na.rm = TRUE) / sqrt(n())
+    ) |>
+      ggplot(aes(x = action_bin, y = mean_iconic)) +
+      geom_point(size = 3) +
+      geom_errorbar(
+      aes(ymin = mean_iconic - se_iconic,
+      ymax = mean_iconic + se_iconic),
+      width = 0.1
+      ) +
+      scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
+      labs(
+        x = "Action Strength (Binned)",
+        y = "Mean Proportion of Iconic Gestures",
+        title = "Iconic Gesture Use Across Levels of Action Strength"
+        ) +
+        theme_minimal()
+```
+
+## Results Cont.
+
+The data revealed that iconic gesture use was similar for both action strength and sensory strength. When action strength was grouped into low, medium, and high bins, iconic gesture proportions were highest for words with moderate action strength and lower for words at the extremes. A similar pattern emerged for sensory strength, with iconic gesture use peaking at intermediate levels rather than increasing monotonically with sensory vividness.
+
+Importantly, action-related meaning did not show a clearly stronger or more linear association with iconic gesture use than sensory meaning. Instead, both displayed similar non-linear trends.
+
+## Discussion
+
+The present exploratory analysis suggests that action-related meaning may not matter more than sensory meaning for iconic gesture use. Rather than increasing steadily with greater action or sensory strength, iconic gestures appear most likely when word meanings are moderately grounded. This pattern is consistent with the idea that gestures function as a complementary resource that comes when spoken language alone may not fully convey the meaning of what the person wants to say.
+
+These findings align with prior work suggesting that iconic gesture production cannot be explained solely by the strength of sensorimotor associations.
+
+## Limitations and Future Directions
+
+Because this analysis is exploratory, it does not support causal conclusions about the role of action or sensory meaning in gesture production. Future work could model action and sensory strength simultaneously, examine contextual features of speech, or test whether similar patterns hold across different languages. Also, future work can use a bigger sample size to get a clearer view of the results.
+
+## Conclusion
+
+Overall, the results suggest that both action-related and sensory meaning relate to iconic gesture use in similar ways. Rather than coming from one dimension over the other, iconic gestures may come most readily when meanings are depictive but not fully specified. This shows the flexible and communicative nature of gesture in language use.

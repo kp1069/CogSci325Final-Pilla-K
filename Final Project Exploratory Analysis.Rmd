@@ -1,0 +1,253 @@
+---
+title: "Exploratory Analysis of Iconic Words and Gestures"
+output: html_notebook
+author: "Kunal Pilla"
+---
+
+```{r,include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(stringr)
+```
+## Overview
+
+
+This exploratory document investigates how sensory modality and lexical iconicity relate to the gestures that humans make.
+
+The guiding questions are:
+
+
+1. Do specific sensory modalities (haptic vs. visual) show distinct gesture profiles?
+2. Does iconicity type (high vs. low iconicity words) interact with modality in predicting iconic gesture use?
+3. Do iconic words activate shared sensory–motor representations that make iconic gestures more likely, and does this depend on modality?
+4. Are iconic gestures more strongly associated with action-related meanings than with purely perceptual meanings?
+
+```{r}
+#Load the data
+by_word<- read_csv("by_word_proportions_with_modality.csv")
+
+glimpse(by_word)
+```
+
+
+Key variables used in this exploration include:
+
+
+- `word`
+- `type` (iconic vs. non-iconic)
+- `dominant_modality` (visual, haptic, auditory, olfactory, gustatory)
+- `gesture_proportion` (any gesture)
+- `iconic_gesture_proportion` (proportion of gestures that are coded as iconic)
+- `dominant_action` (where the action was)
+
+
+
+## Initial Data Checks
+
+
+Before testing relationships, I first examined if there was any missingness and also checked the sample sizes across modalities.
+
+
+```{r}
+by_word |> 
+  count(dominant_modality)
+```
+
+
+```{r}
+by_word |> 
+  count(type)
+```
+
+Some modalities have relatively small numbers of words, which is important to keep in mind when looking at the variability and any differences.
+
+
+## Gesture Profiles by Sensory Modality
+
+
+To investigate whether different modalities show distinct gesture profiles, I summarized iconic gesture proportions by dominant modality.
+
+
+```{r}
+modality_summary <- by_word |>
+  group_by(dominant_modality) |>
+    summarize(
+      mean_iconic = mean(iconic_gesture_proportion, na.rm = TRUE),
+      sd_iconic = sd(iconic_gesture_proportion, na.rm = TRUE),
+      n = n()
+    )
+
+
+modality_summary
+```
+
+### Visualization
+
+
+```{r}
+by_word |>
+  ggplot(aes(x = dominant_modality, y = iconic_gesture_proportion)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_continuous(labels = function(x) paste0(x*100, "%")) +
+    labs(
+      x = "Dominant Sensory Modality",
+      y = "Proportion of Iconic Gestures",
+      title = "Iconic Gesture Proportions by Sensory Modality"
+      ) +
+theme_minimal()
+```
+**Exploratory observation:** Haptic words tend to cluster at higher iconic gesture proportions, while interoceptive words cluster near zero. Visual words show greater spread, which suggests heterogeneity in that modality.
+
+## Iconicity Type × Modality Interaction
+
+
+Next, I examined whether the relationship between modality and gesture differs for high- vs. low-iconicity words.
+
+
+```{r}
+interaction_summary <- by_word |>
+  group_by(type, dominant_modality) |>
+    summarize(
+      mean_iconic = mean(iconic_gesture_proportion, na.rm = TRUE),
+      n = n(), .groups = "drop"
+)
+
+
+interaction_summary
+```
+### Visualization
+
+
+```{r}
+by_word |> 
+  ggplot(aes(
+    x = dominant_modality,
+    y = iconic_gesture_proportion,
+    fill = type
+  )) +
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  scale_y_continuous(labels = function(x) paste0(x*100, "%")) +
+  labs(
+    x = "Dominant Sensory Modality",
+    y = "Proportion of Iconic Gestures",
+    fill = "Iconicity (binned)",
+    title = "Iconic Gesture Proportions by Modality and Iconicity"
+  ) +
+theme_minimal()
+```
+**Exploratory observation:** Words labeled as iconic tend to show higher iconic gesture proportions across modalities, but this difference is especially there for haptic and visual words. On the other side, interoceptive words show little separation even when the iconicity is high.
+
+
+## Broader Question: Sensory–Motor Representations and Modality
+
+
+To try and answer the broader theoretical question and get observable results, I examined whether iconic words show higher iconic gesture proportions than non-iconic words overall, and whether this difference varies by dominant sensory modality.
+
+
+### Overall Difference Between Iconic and Non-Iconic Words
+
+
+```{r}
+by_word |> 
+  group_by(type) |> 
+    summarize(
+    mean_iconic = mean(iconic_gesture_proportion, na.rm = TRUE),
+    sd_iconic = sd(iconic_gesture_proportion, na.rm = TRUE),
+    n_words = n()
+  )
+```
+
+
+```{r}
+by_word |> 
+  ggplot(aes(x = type, y = iconic_gesture_proportion)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
+  labs(
+    x = "Word Type",
+    y = "Proportion of Iconic Gestures",
+    title = "Iconic Gesture Proportions for Iconic vs Non-Iconic Words"
+    )
+```
+
+**Result:** Words labeled as iconic show higher average proportions of iconic gestures than non-iconic words. Although there is overlap between the two distributions, the median and upper range are clearly higher for iconic words, which is consistent with the idea that iconicity increases the likelihood of gesture that depict meaning of the word.
+
+## Broader Question: Does Action-Related Meaning Matter More Than Sensory Meaning?
+
+
+This question asks whether iconic gestures are driven more strongly by action-related meaning than by their sensory vividness alone. If gestures come from simulated actions, then words with stronger action associations should be more likely to co-occur with iconic gestures, even when controlling for the general sensory strength.
+
+
+The dataset includes two other variables that make this question testable: `max_action`, which captures the strongest action association of a word, and `max_strength`, which captures the strongest sensory association across modalities.
+
+
+### Action Strength and Iconic Gesture Proportion
+
+
+```{r}
+by_word |> 
+  summarize(
+    mean_action = mean(max_action, na.rm = TRUE),
+    sd_action = sd(max_action, na.rm = TRUE),
+    mean_iconic = mean(iconic_gesture_proportion, na.rm = TRUE)
+)
+```
+
+
+```{r}
+by_word |> 
+  ggplot(aes(x = max_action, y = iconic_gesture_proportion)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE) +
+  scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
+  labs(
+    x = "Maximum Action Strength",
+    y = "Proportion of Iconic Gestures",
+    title = "Relationship Between Action Strength and Iconic Gesture Use"
+  ) +
+theme_minimal()
+```
+
+**Result:** Iconic gesture use peaks at the mid/moderate levels of action strength and declines at higher levels, suggesting a non-linear relationship between action affordances and gesture production.
+
+
+### Sensory Strength and Iconic Gesture Proportion
+
+
+To compare this pattern with general sensory strength, I next examined the relationship between maximum sensory strength and iconic gesture proportion.
+
+
+```{r}
+by_word %>%
+ggplot(aes(x = max_strength, y = iconic_gesture_proportion)) +
+geom_point(alpha = 0.4) +
+geom_smooth(method = "loess", se = FALSE) +
+scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
+labs(
+x = "Maximum Sensory Strength",
+y = "Proportion of Iconic Gestures",
+title = "Relationship Between Sensory Strength and Iconic Gesture Use"
+) +
+theme_minimal()
+```
+
+**Result:** Sensory strength shows a similar pattern, with the highest iconic gesture proportions occurring at moderate sensory strength rather than at the extremes.
+
+
+### Interpretation
+
+
+Taken together, both action strength and sensory strength show a similar non-linear pattern, with higher proportions of iconic gestures occurring at moderate levels rather than at the higher or lower sides. This pattern suggests that action-related meaning may not have a stronger influence than sensory meaning on iconic gesture use. Instead, iconic gestures may be more likely when meanings are moderately depictive, which helps gestures to contribute additional visual information. On a broader scale, this pattern suggests that iconic gestures may not simply reflect how strongly a word is tied to action or sensory experience. Instead, gestures may play a complementary role in communication. They can occur when spoken language alone does not fully capture the meaning of something.
+
+
+
+
+
+
+
+
+
+
+
+
