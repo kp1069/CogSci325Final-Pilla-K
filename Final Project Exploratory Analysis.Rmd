@@ -219,16 +219,16 @@ To compare this pattern with general sensory strength, I next examined the relat
 
 
 ```{r}
-by_word %>%
-ggplot(aes(x = max_strength, y = iconic_gesture_proportion)) +
-geom_point(alpha = 0.4) +
-geom_smooth(method = "loess", se = FALSE) +
-scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
-labs(
-x = "Maximum Sensory Strength",
-y = "Proportion of Iconic Gestures",
-title = "Relationship Between Sensory Strength and Iconic Gesture Use"
-) +
+by_word |> 
+  ggplot(aes(x = max_strength, y = iconic_gesture_proportion)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE) +
+  scale_y_continuous(labels = function(x) paste0(x * 100, "%")) +
+  labs(
+    x = "Maximum Sensory Strength",
+    y = "Proportion of Iconic Gestures",
+    title = "Relationship Between Sensory Strength and Iconic Gesture Use"
+  ) +
 theme_minimal()
 ```
 
